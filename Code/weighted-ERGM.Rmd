@@ -42,16 +42,21 @@ library(ergm.count)
 # read interaction data
 int.data <- read.table("Data/rocina_halimium_09072019.csv", sep=";", header=T)
 str(int.data)
+colnames(int.data)[1] <- "ID"
 int.data$N_visits <- as.numeric(int.data$N_visits)
 
 
 # create interaction matrix (individual plants x pollinator species)
-int.matrix <- dcast(int.data %>%dplyr::select(Plant_ID, Pollinator_sp, N_visits), 
+# dcast pasa de long a wide. Ahora se usa pivotlonger or pivotwider
+
+int.matrix <- dcast(int.data %>% dplyr::select(Plant_ID, Pollinator_sp, N_visits), 
                     Plant_ID ~ Pollinator_sp, value.var="N_visits", fun.aggregate = sum)
 
 # read plant attributes and merge with the interaction matrix
 trait.data <- read.table("Data/individual_data_halimium_20190714.csv", sep=";", header=T)
 complete.df <- merge(int.matrix, trait.data, by="Plant_ID")
+
+# se une todo para asegurarnos que los atributos de los nodos y el orden de los nodos se mantiene
 
 ```
 
@@ -88,6 +93,10 @@ attr$Neighbour_intra_2m_m2 <- scale(attr$Neighbour_intra_2m_m2)
 attr$Neighbour_inter_2m_m2 <- scale(attr$Neighbour_inter_2m_m2)
                  
 # Associate plant attributes to plant nodes in the igraph object     
+# en igraph los nodos de la red se anotan con V
+# añado el nombre de los atributos y pongo NA para los polinizadores para que no le de el nombre de los 
+# atributos. Se podría usar dim1 o dim2 para sustituir 1:60 o 21. 
+
 V(bi.g)$Plant_ID <- c(attr$Plant_ID[1:60], rep(NA, 21))
 V(bi.g)$Max_height_m <- c(attr$Max_height_m[1:60], rep(NA, 21))
 V(bi.g)$Flower_guide <- c(attr$Flower_guide[1:60], rep(NA, 21))
@@ -102,13 +111,17 @@ V(bi.g)$Neighbour_inter_1m_m2 <- c(attr$Neighbour_inter_1m_m2[1:60], rep(NA, 21)
 V(bi.g)$Neighbour_intra_2m_m2 <- c(attr$Neighbour_intra_2m_m2[1:60], rep(NA, 21))
 V(bi.g)$Neighbour_inter_2m_m2 <- c(attr$Neighbour_inter_2m_m2[1:60], rep(NA, 21))
 
- 
+# (v/n) --> atributo de vertice, variable cuantitativa
+# (v/l) --> atributo de vertice, label
+# (v/c) --> atributo de vertice, variable categorica
+# (e/n) --> atributo de edge, variable cuantitativa
+
 ```
 
 
 # Bipartite network: set matrices and graphs for model testing (create network object)
 
-After creating the igraph object with associated node information, I have to create an adjacency matrix from the igraph object prior to obtaining the analogous network object. From the igraph object, I also extracted all plant attribute variables to set vertex (i.e. nodes) attributes in the netwwork object. ERGMs work with network objects.
+After creating the igraph object with associated node information, I have to create an adjacency matrix from the igraph object prior to obtaining the analogous network object. From the igraph object, I also extracted all plant attribute variables to set vertex (i.e. nodes) attributes in the network object. ERGMs work with network objects.
 
  
 ```{r bi.graphs, echo=TRUE, message= TRUE, warning= TRUE, fig.width=9}
@@ -196,8 +209,12 @@ To model the effects of plant attributes I used the b1cov term, defined as the m
 
 ```{r bi.models.fit, echo=TRUE, message= TRUE, warning= TRUE}
 
-ergm0 <- formula(bi.net ~ sum) 
+ergm0 <- formula(bi.net ~ sum) # probabilidad media de enlaces.
 
+#b1cov -> efecto de una variable continua referente a un atributo de la planta (1 se refiere a filas o modo 1)
+#b2factor -> efecto de una variable categorica (factor) referente a un atributo de los polinizadores (2 se refiere a columnas o modo 2)
+
+# modelo completo con todas las variables (fenotipicas, microhabitat, vecindario)
 ergm1 <- formula(bi.net ~ sum  
                         + b1cov("Max_height_m", form= "sum")
                         + b1cov("Flower_guide", form= "sum")
@@ -215,6 +232,7 @@ ergm1 <- formula(bi.net ~ sum
                  
                         + b2factor("Pollinator_fg", form="sum"))
 
+# modelo con las variables fenotipicas
 ergm2 <- formula(bi.net ~ sum  
                         + b1cov("Max_height_m", form= "sum")
                         + b1cov("Flower_guide", form= "sum")
@@ -233,6 +251,7 @@ ergm2 <- formula(bi.net ~ sum
 
                         + b2factor("Pollinator_fg", form="sum"))
 
+# modelo con las variables de microhabitat
 ergm3 <- formula(bi.net ~ sum  
                         #+ b1cov("Max_height_m", form= "sum")
                         #+ b1cov("Flower_guide", form= "sum")
@@ -251,6 +270,7 @@ ergm3 <- formula(bi.net ~ sum
 
                         + b2factor("Pollinator_fg", form="sum"))
 
+# modelo con las variables de vecindario
 ergm4 <- formula(bi.net ~ sum  
                         #+ b1cov("Max_height_m", form= "sum")
                         #+ b1cov("Flower_guide", form= "sum")
