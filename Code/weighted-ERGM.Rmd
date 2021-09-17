@@ -232,6 +232,24 @@ ergm1 <- formula(bi.net ~ sum
                  
                         + b2factor("Pollinator_fg", form="sum"))
 
+ergm1b <- formula(bi.net ~ sum  
+                        + b1cov("Max_height_m", form= "sum")
+                        + b1cov("Flower_guide", form= "sum")
+                        + b1cov("Sum_flower_number", form= "sum")
+                        + b1cov("Synchrony_marquis", form= "sum")
+                 
+                        + b1cov("Distance_to_stream", form= "sum")
+                        + b1cov("Distance_to_tree", form= "sum")
+                        + b1cov("Distance_to_edge", form= "sum")
+                 
+                        + b1cov("Neighbour_intra_1m_m2", form= "sum")
+                        + b1cov("Neighbour_inter_1m_m2", form= "sum")
+                        + b1cov("Neighbour_intra_2m_m2", form= "sum")
+                        + b1cov("Neighbour_inter_2m_m2", form= "sum")
+                 
+                        #+ b2factor("Pollinator_fg", form="sum")
+                  )
+
 # modelo con las variables fenotipicas
 ergm2 <- formula(bi.net ~ sum  
                         + b1cov("Max_height_m", form= "sum")
@@ -271,7 +289,7 @@ ergm3 <- formula(bi.net ~ sum
                         + b2factor("Pollinator_fg", form="sum"))
 
 # modelo con las variables de vecindario
-ergm4 <- formula(bi.net ~ sum  
+ergm4 <- formula(bi.net ~ sum 
                         #+ b1cov("Max_height_m", form= "sum")
                         #+ b1cov("Flower_guide", form= "sum")
                         #+ b1cov("Flower_size", form= "sum")
@@ -290,7 +308,6 @@ ergm4 <- formula(bi.net ~ sum
                         + b2factor("Pollinator_fg", form="sum"))
 
 
-                      
 ```
 
 # Bipartite network : compute ERGMs
@@ -315,6 +332,10 @@ Running a valued ERGM usually takes longer than binary ERGMs.
 set.seed(42)
 ergm.fit0 <- ergm(ergm0, response= "weight", reference= ~Poisson)  # Simplest model
 ergm.fit1 <- ergm(ergm1, response= "weight", reference= ~Poisson)    # Full model
+
+ergm.fit1.init <- ergm(ergm1, response= "weight", reference= ~Poisson, control= control.ergm(init= ergm.fit1$coef))                 # Full model
+
+ergm.fit1b <- ergm(ergm1b, response= "weight", reference= ~Poisson)    # Full model without func group
 ergm.fit2 <- ergm(ergm2, response = "weight", reference= ~Poisson)    # with phenotypic variables 
 ergm.fit3 <- ergm(ergm3, response = "weight", reference= ~Poisson)    # with microhabitat variables 
 ergm.fit4 <- ergm(ergm4, response = "weight", reference= ~Poisson)    # with neighbourhood variables
@@ -325,6 +346,12 @@ mcmc.diagnostics(ergm.fit0)
 
 summary(ergm.fit1) 
 mcmc.diagnostics(ergm.fit1) # For ergm() specifically, recent changes in the estimation algorithm mean that these plots can no longer be used to ensure that the mean statistics from the model match the observed network statistics.
+
+summary(ergm.fit1.init) 
+mcmc.diagnostics(ergm.fit1.init) # For ergm() specifically, recent changes in the estimation algorithm mean that these 
+
+summary(ergm.fit1b) 
+mcmc.diagnostics(ergm.fit1b) # without functional groups
 
 summary(ergm.fit2)
 mcmc.diagnostics(ergm.fit2)
@@ -496,9 +523,9 @@ uni.ergm2 <- formula(uni.net ~ sum
 ```{r uni.model.tests, echo=TRUE, message= FALSE, warning= TRUE}
 
 set.seed(42)
-uni.ergm.fit0 <- ergm(uni.ergm0, response ="weight", reference= ~Poisson) 
-uni.ergm.fit1 <- ergm(uni.ergm1, response ="weight", reference= ~Poisson)   
-uni.ergm.fit2 <- ergm(uni.ergm2, response ="weight", reference= ~Poisson) 
+uni.ergm.fit0 <- ergm(uni.ergm0, response ="weight", reference= ~Poisson, control =control.ergm(MCMLE.maxit = 30)) 
+uni.ergm.fit1 <- ergm(uni.ergm1, response ="weight", reference= ~Poisson, control =control.ergm(MCMLE.maxit = 30))   
+uni.ergm.fit2 <- ergm(uni.ergm2, response ="weight", reference= ~Poisson, control =control.ergm(MCMLE.maxit = 30)) 
 
 
 summary(uni.ergm.fit0) 
